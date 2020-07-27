@@ -30,4 +30,4 @@ eg: pipenv run  python shotty/shotty.py start --project='xxxxx'
 
   eg: pipenv run  python shotty/shotty.py instances list
       pipenv run  python shotty/shotty.py snapshots list
-      pipenv run  python shotty/shotty.py instances snapshots --project Valkyrie
+      pipenv run  python shotty/shotty.py instances snapshots --project xxxxx
