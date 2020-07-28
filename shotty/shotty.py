@@ -5,7 +5,7 @@ import click
 #connecting to Session
 session = boto3.Session(profile_name ='shotty')
 ec2 = session.resource('ec2')
-#function filters the project tag and store as list which then can be iterated
+#function filters the project tag and returns as list which then can be iterated
 def filter_instances(project):
     instances =[]
     if project :
@@ -14,10 +14,15 @@ def filter_instances(project):
     else:
         instances = ec2.instances.all()
     return instances
+#function returns pending snapshots.
+def has_pending_snapshot(volume):
+    snapshots = list(volume.snapshots.all())
+    return snapshots and snapshots[0].state =='pending'
 #Main Command group for snapshot,volumes,instances.
 @click.group()
 def cli():
     """Shotty Manages snapshots"""
+
 #Command Group for Sanpshot to list .
 @cli.group('snapshots')
 def snapshots():
@@ -49,6 +54,7 @@ def list_snapshots(project,list_all):
                 #to get the most recent successfull snapshot and break the loop
                 if s.state == 'completed' and not list_all: break
     return
+
 #Command Group for volumes to list.
 @cli.group('volumes')
 def volumes() :
@@ -91,9 +97,12 @@ def create_snapshot(project):
         i.stop()
         i.wait_until_stopped()
         for v in i.volumes.all():
+            if has_pending_snapshot(v):
+                print("Skipping {0},snapshot already in progress".format(v.id))
+                continue
             print("Creating snapshots of{0}".format(v.id))
             v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
-        print("Starting  {0}",format(i.id))
+        print("Starting  {0}".format(i.id))
         i.start()
         i.wait_until_running()
     print("Done")
@@ -141,7 +150,7 @@ def stop_instances(project):
     return
 #command for 'Start'.
 @instances.command('start')
-# arguments are passed as parameter options: --project 'xxxxx' 
+# arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
    help='Only Instances for project')
 #project is passed to filter out and get list of instance
