@@ -1,5 +1,6 @@
 #imorting necessary Packages
 import boto3
+import botocore
 import click
 #connecting to Session
 session = boto3.Session(profile_name ='shotty')
@@ -126,7 +127,11 @@ def stop_instances(project):
     # for each instance start function is invoked
     for i in instances:
         print("Stopping {0}...".format(i.id))
-        i.stop()
+        try:
+           i.stop()
+        except botocore.exceptions.ClientError as e :
+           print("Could not stop {0}. ",format(i.id)+ str(e))
+           continue
     return
 #command for 'Start'.
 @instances.command('start')
@@ -140,7 +145,11 @@ def start_instances(project):
     # for each instance stop function is invoked
     for i in instances:
         print("Starting {0}...".format(i.id))
-        i.start()
+        try:
+            i.start()
+        except botocore.exceptions.ClientError as e :
+            print("Could not start {0}. ",format(i.id)+ str(e))
+            continue
     return
 #invoke the group command
 if __name__ == '__main__':
