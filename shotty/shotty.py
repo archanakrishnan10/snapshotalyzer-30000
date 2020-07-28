@@ -23,10 +23,13 @@ def cli():
 def snapshots():
     """Commands for Snapshots"""
 @snapshots.command('list')
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
 help="Only snapshot for project (tag Project:<name>)")
-def list_volumes(project):
+# arguments are passed as parameter options: --all
+@click.option('--all','list_all',default = False,is_flag = True,
+help="List All snapshots of each Volume on request for --all")
+def list_snapshots(project,list_all):
     "List EC2 Snapshot"
     #project is passed to filter out and get list of instance
     instances = filter_instances(project)
@@ -43,6 +46,8 @@ def list_volumes(project):
                 s.progress,
                 s.start_time.strftime("%c")
                 )))
+                #to get the most recent successfull snapshot and break the loop
+                if s.state == 'completed' and not list_all: break
     return
 #Command Group for volumes to list.
 @cli.group('volumes')
@@ -50,7 +55,7 @@ def volumes() :
     """Commands for Volumes"""
 #command for 'List'.
 @volumes.command('list')
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx' .
 @click.option('--project',default=None,
 help="Only Volume for project (tag Project:<name>)")
 def list_volume(project):
@@ -74,7 +79,7 @@ def instances():
     """Commands for instances"""
 #command for 'creating snapshots.
 @instances.command('snapshots',help="Create snapshots of all volumes")
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
 help="Only Instances for project (tag Project:<name>)")
 def create_snapshot(project):
@@ -95,7 +100,7 @@ def create_snapshot(project):
     return
 #command for 'List.
 @instances.command('list')
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
 help="Only Instances for project (tag Project:<name>)")
 def list_instances(project):
@@ -117,7 +122,7 @@ def list_instances(project):
     return
 #command for 'Stop'.
 @instances.command('stop')
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
    help='Only Instances for project')
 #project is passed to filter out and get list of instance
@@ -127,6 +132,7 @@ def stop_instances(project):
     # for each instance start function is invoked
     for i in instances:
         print("Stopping {0}...".format(i.id))
+        #exception handling for overlaping start/stop
         try:
            i.stop()
         except botocore.exceptions.ClientError as e :
@@ -135,7 +141,7 @@ def stop_instances(project):
     return
 #command for 'Start'.
 @instances.command('start')
-# arguments are passed as parameter declarations to Option:'Project' is passed.
+# arguments are passed as parameter options: --project 'xxxxx' 
 @click.option('--project',default=None,
    help='Only Instances for project')
 #project is passed to filter out and get list of instance
@@ -145,6 +151,7 @@ def start_instances(project):
     # for each instance stop function is invoked
     for i in instances:
         print("Starting {0}...".format(i.id))
+        #exception handling for overlaping start/stop
         try:
             i.start()
         except botocore.exceptions.ClientError as e :

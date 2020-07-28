@@ -34,3 +34,7 @@ eg: pipenv run  python shotty/shotty.py start --project='xxxxx'
       pipenv run  python shotty/shotty.py instances start --project xxxxx
       pipenv run  python shotty/shotty.py instances stop --project xxxxx
       pipenv run  python shotty/shotty.py instances list --project xxxxx
+
+--28/07/2020
+   --to list all snapshot
+  eg: pipenv run  python shotty/shotty.py snapshots list --all
