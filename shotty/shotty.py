@@ -18,9 +18,9 @@ def filter_instances(project,force_all):
 
     return instances
 #function returns pending snapshots.
-def has_pending_snapshot(volume):
-    snapshots = list(volume.snapshots.all())
-    return snapshots and snapshots[0].state =='pending'
+ #def has_pending_snapshot(volume):
+    #snapshots = list(volume.snapshots.all())
+    #return snapshots and snapshots[0].state =='pending'
 
 #Main Command group for snapshot,volumes,instances.
 @click.group()
@@ -107,11 +107,16 @@ def create_snapshot(project,force_all):
         i.stop()
         i.wait_until_stopped()
         for v in i.volumes.all():
-            if has_pending_snapshot(v):
-                print("Skipping {0},snapshot already in progress".format(v.id))
+            #if has_pending_snapshot(v):
+                #print("Skipping {0},snapshot already in progress".format(v.id))
+                #continue
+            #print("Creating snapshots of{0}".format(v.id))
+            try :
+                print("Creating snapshots of{0}".format(v.id))
+                v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
+            except botocore.exceptions.ClientError as e :
+                print("Snapshot already in progress {0}. ",format(i.id)+ str(e))
                 continue
-            print("Creating snapshots of{0}".format(v.id))
-            v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
         print("Starting  {0}".format(i.id))
         i.start()
         i.wait_until_running()
