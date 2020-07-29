@@ -54,3 +54,7 @@ pipenv run  python shotty/shotty.py instances list --force
 Added code to reboot instances:
 pipenv run  python shotty/shotty.py instances reboot --project xxxxx
 pipenv run  python shotty/shotty.py instances reboot --force
+
+Modified script to accept instance filter to start/stop/snapshot/reboot only given instance id.
+Eg:
+pipenv run  python shotty/shotty.py instances stop --instance 'i-x0xxx12xxxx678'

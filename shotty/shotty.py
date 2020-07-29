@@ -6,10 +6,13 @@ import click
 session = boto3.Session(profile_name ='shotty')
 ec2 = session.resource('ec2')
 #function filters the project tag and returns as list which then can be iterated
-def filter_instances(project,force_all):
+def filter_instances(project,force_all,instance):
     instances =[]
     if project :
         filters =[{'Name':'tag:Project','Values':[project]}]
+        instances = ec2.instances.filter(Filters=filters)
+    elif instance :
+        filters =[{'Name': 'instance-id','Values':[instance]}]
         instances = ec2.instances.filter(Filters=filters)
     elif force_all :
         instances = ec2.instances.all()
@@ -40,10 +43,12 @@ help="Only snapshot for project (tag Project:<name>)")
 help="List All snapshots of each Volume on request for --all")
 @click.option('--force','force_all',default = True,
       help="List All snapshots")
-def list_snapshots(project,list_all,force_all):
+@click.option('--instance',default = None,
+            help="Only snapshot for instance")
+def list_snapshots(project,list_all,force_all,instance):
     "List EC2 Snapshot"
     #project is passed to filter out and get list of instance
-    instances = filter_instances(project,force_all)
+    instances = filter_instances(project,force_all,instance)
     #iterate for getting instance,volume and its snapshot details together
     #eg:id,volume id,instance id,state,progress,start time
     for i in instances:
@@ -72,10 +77,12 @@ def volumes() :
 help="Only Volume for project (tag Project:<name>)")
 @click.option('--force','force_all',default = True,
       help="List All Volumes")
-def list_volume(project,force_all):
+@click.option('--instance',default = None,
+            help="Only Volumes for instance")
+def list_volume(project,force_all,instance):
     "List EC2 Volume"
     #project is passed to filter out and get list of instance
-    instances = filter_instances(project,force_all)
+    instances = filter_instances(project,force_all,instance)
     #iterate for getting instance and volume details together for consistency
     #eg:id,instance id,state,size,encrypted(boolean)
     for i in  instances :
@@ -98,9 +105,11 @@ def instances():
 help="Only Instances for project (tag Project:<name>)")
 @click.option('--force','force_all',default = False,is_flag = True,
       help="Create snapshots for all")
-def create_snapshot(project,force_all):
+@click.option('--instance',default = None,
+                  help="Create snapshot for only selected instance")
+def create_snapshot(project,force_all,instance):
     "Create snapshots for EC2 instances"
-    instances = filter_instances(project,force_all)
+    instances = filter_instances(project,force_all,instance)
     # for each instance,volume,create snapshot
     for i in instances:
         print("Stopping  {0}",format(i.id))
@@ -129,10 +138,12 @@ def create_snapshot(project,force_all):
 help="Only Instances for project (tag Project:<name>)")
 @click.option('--force','force_all',default = True,
       help="List All instances")
-def list_instances(project,force_all):
+@click.option('--instance',default = None,
+                  help="Only selected instance")
+def list_instances(project,force_all,instance):
     "List EC2 instances"
     #project is passed to filter out and get list of instance
-    instances = filter_instances(project,force_all)
+    instances = filter_instances(project,force_all,instance)
     #iterate for getting instance collection sperated
     #eg:id,instancetype,placement,state,dns,ProjectName
     for i in instances :
@@ -153,10 +164,12 @@ def list_instances(project,force_all):
    help='Only Instances for project')
 @click.option('--force','force_all',default = False,is_flag = True,
    help="Force stop All instances")
+@click.option('--instance',default = None,
+                     help="Stop Only selected instance")
 #project is passed to filter out and get list of instance
-def stop_instances(project,force_all):
+def stop_instances(project,force_all,instance):
     "Stop EC2 instances"
-    instances =filter_instances(project,force_all)
+    instances =filter_instances(project,force_all,instance)
     # for each instance stop function is invoked
     for i in instances:
         print("Stopping {0}...".format(i.id))
@@ -174,10 +187,12 @@ def stop_instances(project,force_all):
    help='Only Instances for project')
 @click.option('--force','force_all',default = False,is_flag = True,
       help="Force start All instances")
+@click.option('--instance',default = None,
+                   help="Start Only selected instance")
 #project is passed to filter out and get list of instance
-def start_instances(project,force_all):
+def start_instances(project,force_all,instance):
     "start EC2 instances"
-    instances =filter_instances(project,force_all)
+    instances =filter_instances(project,force_all,instance)
     # for each instance stop function is invoked
     for i in instances:
         print("Starting {0}...".format(i.id))
@@ -196,10 +211,12 @@ def start_instances(project,force_all):
    help='Only Instances for project')
 @click.option('--force','force_all',default = False,is_flag = True,
       help="Force reboot All instances")
+@click.option('--instance',default = None,
+                   help="Reboot Only selected instance")
 #project is passed to filter out and get list of instance
-def reboot_instances(project,force_all):
+def reboot_instances(project,force_all,instance):
     "reboot EC2 instances"
-    instances =filter_instances(project,force_all)
+    instances =filter_instances(project,force_all,instance)
     # for each instance reboot function is invoked
     for i in instances:
         print("Rebooting {0}...".format(i.id))
