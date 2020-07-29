@@ -167,6 +167,7 @@ def start_instances(project):
             print("Could not start {0}. ",format(i.id)+ str(e))
             continue
     return
-#invoke the group command
-if __name__ == '__main__':
+#invoke the main group command
+if __name__ == '__main__' :
+#if 1==1 :
     cli()
