@@ -38,5 +38,19 @@ eg: pipenv run  python shotty/shotty.py start --project='xxxxx'
 
 
 --28/07/2020
-   --to list all snapshot
+  Added code to list only recent snapshots for each volume.Else provide all to list all snapshots
+   --to list all snapshot for each volumes
   eg: pipenv run  python shotty/shotty.py snapshots list --all
+
+
+--29/07/2020
+Modified code to provide project name /--force to start/stop/snapshot/reboot instances. Else throw warning.(--force will start/stop/create snapshot/reboot All EC2 instances regardless of project)
+pipenv run  python shotty/shotty.py instances start --project xxxxx
+pipenv run  python shotty/shotty.py instances start --force
+pipenv run  python shotty/shotty.py instances stop --project xxxxx
+pipenv run  python shotty/shotty.py instances stop ----force
+pipenv run  python shotty/shotty.py instances list --project xxxxx
+pipenv run  python shotty/shotty.py instances list --force
+Added code to reboot instances:
+pipenv run  python shotty/shotty.py instances reboot --project xxxxx
+pipenv run  python shotty/shotty.py instances reboot --force
