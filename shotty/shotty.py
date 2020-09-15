@@ -2,6 +2,7 @@
 import boto3
 import botocore
 import click
+import datetime
 #connecting to Session
 session = boto3.Session(profile_name ='shotty')
 ec2 = session.resource('ec2')
@@ -25,6 +26,21 @@ def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state =='pending'
 
+def age_check_snapshot(volume,snap_age):
+    for s in volume.snapshots.all():
+        if s.state == 'completed' :
+            if snap_age :
+                days_old = datetime.date.today() - s.start_time.date()
+                days_old = days_old.days
+                if int(snap_age) <= days_old :
+                    days_old = days_old.days
+                else :
+                    days_old = -1
+            else:
+                days_old = 0
+        else:
+            print("Skipping snapshot already in progress")
+    return days_old
 #Main Command group for snapshot,volumes,instances.
 @click.group()
 def cli():
@@ -199,12 +215,14 @@ def reboot_instances(project,force_all,instance):
 @snapshots.command('create_snapshot',help="Create snapshots of all volumes")
 # arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
-help="Only Instances for project (tag Project:<name>)")
+    help="Only Instances for project (tag Project:<name>)")
 @click.option('--force','force_all',default = False,is_flag = True,
-      help="Create snapshots for all")
+    help="Create snapshots for all")
 @click.option('--instance',default = None,
-                  help="Create snapshot for only selected instance")
-def create_snapshot(project,force_all,instance):
+    help="Create snapshot for only selected instance")
+@click.option('--age','snap_age',default = None,
+    help="snapshot only if last succesfull snapshot is older than age param")
+def create_snapshot(project,force_all,instance,snap_age):
     "Create snapshots for EC2 instances"
     instances = filter_instances(project,force_all,instance)
     # for each instance,volume,create snapshot
@@ -218,12 +236,16 @@ def create_snapshot(project,force_all,instance):
                     print("Stopping  {0}",format(i.id))
                     i.stop()
                     i.wait_until_stopped()
-                print("Creating snapshots of{0}".format(v.id))
-                try :
-                    v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
-                except botocore.exceptions.ClientError as e :
-                    print("Skipped Snapshot creation {0}. ",format(i.id)+ str(e))
-                    continue
+                days_old = age_check_snapshot(v,snap_age)
+                if days_old ==0 or days_old != -1 :
+                    print("Creating snapshots of{0}".format(v.id))
+                    try :
+                        v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
+                    except botocore.exceptions.ClientError as e :
+                        print("Skipped Snapshot creation {0}. ",format(i.id)+ str(e))
+                        continue
+                else :
+                    print(" Skipping snapshot of {0},snapshot within {1} days already exists".format(v.id,snap_age))
             if instance_state == 'running':
                 print("Starting  {0}".format(i.id))
                 i.start()

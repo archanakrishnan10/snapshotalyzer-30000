@@ -24,7 +24,7 @@ shotty uses the Configuration file created by the AWS Cli. eg
       pipenv run  python shotty/shotty.py instances stop --project xxxxx
       pipenv run  python shotty/shotty.py instances list --project xxxxx
       --create snapshot command
-      pipenv run  python shotty/shotty.py instances snapshots --project xxxxx
+      pipenv run  python shotty/shotty.py snapshots create_snapshot --project xxxxx
 
 
 --28/07/2020
@@ -34,19 +34,22 @@ shotty uses the Configuration file created by the AWS Cli. eg
 
 
 --29/07/2020
-Modified code to provide project name /--force to start/stop/snapshot/reboot instances. Else throw warning.(--force will start/stop/create snapshot/reboot All EC2 instances regardless of project)
+#SModified code to provide project name /--force to start/stop/snapshot/reboot instances. Else throw warning.(--force will start/stop/create snapshot/reboot All EC2 instances regardless of project)
 pipenv run  python shotty/shotty.py instances start --project xxxxx
 pipenv run  python shotty/shotty.py instances start --force
-pipenv run  python shotty/shotty.py instances snapshots --project xxxxx
-pipenv run  python shotty/shotty.py instances snapshots --force
+pipenv run  python shotty/shotty.py snapshots create_snapshot --project xxxxx
+pipenv run  python shotty/shotty.py snapshots create_snapshot --force
 pipenv run  python shotty/shotty.py instances stop --project xxxxx
 pipenv run  python shotty/shotty.py instances stop ----force
 pipenv run  python shotty/shotty.py instances list --project xxxxx
 pipenv run  python shotty/shotty.py instances list --force
-Added code to reboot instances:
+#Added code to reboot instances:
 pipenv run  python shotty/shotty.py instances reboot --project xxxxx
 pipenv run  python shotty/shotty.py instances reboot --force
 
 Modified script to accept instance filter to start/stop/snapshot/reboot only given instance id.
 Eg:
 pipenv run  python shotty/shotty.py instances stop --instance 'i-x0xxx12xxxx678'
+--15/09/2020
+# optional param for age to create snapshot if the snapshot is older than given days
+pipenv run  python shotty/shotty.py snapshots create_snapshot --project xxxxx  --age x
