@@ -21,16 +21,16 @@ def filter_instances(project,force_all,instance):
 
     return instances
 #function returns pending snapshots.
- #def has_pending_snapshot(volume):
-    #snapshots = list(volume.snapshots.all())
-    #return snapshots and snapshots[0].state =='pending'
+def has_pending_snapshot(volume):
+    snapshots = list(volume.snapshots.all())
+    return snapshots and snapshots[0].state =='pending'
 
 #Main Command group for snapshot,volumes,instances.
 @click.group()
 def cli():
     """Shotty Manages snapshots"""
 
-#Command Group for Sanpshot to list .
+#Command Group to list Snapshot.
 @cli.group('snapshots')
 def snapshots():
     """Commands for Snapshots"""
@@ -66,7 +66,7 @@ def list_snapshots(project,list_all,force_all,instance):
                 if s.state == 'completed' and not list_all: break
     return
 
-#Command Group for volumes to list.
+#Command Group to list volumes.
 @cli.group('volumes')
 def volumes() :
     """Commands for Volumes"""
@@ -94,43 +94,10 @@ def list_volume(project,force_all,instance):
             v.encrypted and "encrypted" or "Not encrypted"
             )))
     return
-#Commands Group for instances to create snapshot and list,stop,startinstances.
+#Command Group to list Instances.
 @cli.group('instances')
 def instances():
     """Commands for instances"""
-#command for 'creating snapshots.
-@instances.command('snapshots',help="Create snapshots of all volumes")
-# arguments are passed as parameter options: --project 'xxxxx'
-@click.option('--project',default=None,
-help="Only Instances for project (tag Project:<name>)")
-@click.option('--force','force_all',default = False,is_flag = True,
-      help="Create snapshots for all")
-@click.option('--instance',default = None,
-                  help="Create snapshot for only selected instance")
-def create_snapshot(project,force_all,instance):
-    "Create snapshots for EC2 instances"
-    instances = filter_instances(project,force_all,instance)
-    # for each instance,volume,create snapshot
-    for i in instances:
-        print("Stopping  {0}",format(i.id))
-        i.stop()
-        i.wait_until_stopped()
-        for v in i.volumes.all():
-            #if has_pending_snapshot(v):
-                #print("Skipping {0},snapshot already in progress".format(v.id))
-                #continue
-            #print("Creating snapshots of{0}".format(v.id))
-            try :
-                print("Creating snapshots of{0}".format(v.id))
-                v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
-            except botocore.exceptions.ClientError as e :
-                print("Snapshot already in progress {0}. ",format(i.id)+ str(e))
-                continue
-        print("Starting  {0}".format(i.id))
-        i.start()
-        i.wait_until_running()
-    print("Done")
-    return
 #command for 'List.
 @instances.command('list')
 # arguments are passed as parameter options: --project 'xxxxx'
@@ -157,7 +124,7 @@ def list_instances(project,force_all,instance):
             i.public_dns_name,
             tags.get('Project','<no project>'))))
     return
-#command for 'Stop'.
+#command for 'Stop' instances.
 @instances.command('stop')
 # arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
@@ -180,7 +147,7 @@ def stop_instances(project,force_all,instance):
            print("Could not stop {0}. ",format(i.id)+ str(e))
            continue
     return
-#command for 'Start'.
+#command for 'Start' instances.
 @instances.command('start')
 # arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
@@ -204,7 +171,7 @@ def start_instances(project,force_all,instance):
             continue
     return
 
-#command for 'Reboot'.
+#command for 'Reboot' instances.
 @instances.command('reboot')
 # arguments are passed as parameter options: --project 'xxxxx'
 @click.option('--project',default=None,
@@ -226,6 +193,42 @@ def reboot_instances(project,force_all,instance):
         except botocore.exceptions.ClientError as e :
             print("Could not reboot instance {0}. ",format(i.id)+ str(e))
             continue
+    return
+
+#command for 'creating snapshots.
+@snapshots.command('create_snapshot',help="Create snapshots of all volumes")
+# arguments are passed as parameter options: --project 'xxxxx'
+@click.option('--project',default=None,
+help="Only Instances for project (tag Project:<name>)")
+@click.option('--force','force_all',default = False,is_flag = True,
+      help="Create snapshots for all")
+@click.option('--instance',default = None,
+                  help="Create snapshot for only selected instance")
+def create_snapshot(project,force_all,instance):
+    "Create snapshots for EC2 instances"
+    instances = filter_instances(project,force_all,instance)
+    # for each instance,volume,create snapshot
+    for i in instances:
+            instance_state = i.state['Name']
+            for v in i.volumes.all():
+                if has_pending_snapshot(v):
+                    print("Skipping {0},snapshot already in progress".format(v.id))
+                    continue
+                if instance_state =='running':
+                    print("Stopping  {0}",format(i.id))
+                    i.stop()
+                    i.wait_until_stopped()
+                print("Creating snapshots of{0}".format(v.id))
+                try :
+                    v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
+                except botocore.exceptions.ClientError as e :
+                    print("Skipped Snapshot creation {0}. ",format(i.id)+ str(e))
+                    continue
+            if instance_state == 'running':
+                print("Starting  {0}".format(i.id))
+                i.start()
+                i.wait_until_running()
+    print("Done")
     return
 #invoke the main group command
 if __name__ == '__main__' :

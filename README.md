@@ -11,16 +11,6 @@ shotty uses the Configuration file created by the AWS Cli. eg
 
 'aws configure -- profile shotty'
 
-## Running
-'pipenv run python shotty/shotty.py <command> <--project=PROJECT>'
-*command* is a list,start,stop or help
-*project* is optional
-
-eg: pipenv run  python shotty/shotty.py start --project='xxxxx'
-    pipenv run  python shotty/shotty.py stop --project='xxxxx'
-    pipenv run  python shotty/shotty.py list --project='xxxxx'
-    pipenv run  python shotty/shotty.py --help
-
 --27/07/2020
 ## Running
     'pipenv run python shotty/shotty.py <command> <subcommand> <--project=PROJECT>'
@@ -47,6 +37,8 @@ eg: pipenv run  python shotty/shotty.py start --project='xxxxx'
 Modified code to provide project name /--force to start/stop/snapshot/reboot instances. Else throw warning.(--force will start/stop/create snapshot/reboot All EC2 instances regardless of project)
 pipenv run  python shotty/shotty.py instances start --project xxxxx
 pipenv run  python shotty/shotty.py instances start --force
+pipenv run  python shotty/shotty.py instances snapshots --project xxxxx
+pipenv run  python shotty/shotty.py instances snapshots --force
 pipenv run  python shotty/shotty.py instances stop --project xxxxx
 pipenv run  python shotty/shotty.py instances stop ----force
 pipenv run  python shotty/shotty.py instances list --project xxxxx
