@@ -26,20 +26,23 @@ def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state =='pending'
 
-def age_check_snapshot(volume,snap_age):
+def age_check_snapshot(volume,snap_age,check_all):
+    days_old = 0
     for s in volume.snapshots.all():
-        if s.state == 'completed' :
+        if s.state == 'completed':
             if snap_age :
-                days_old = datetime.date.today() - s.start_time.date()
-                days_old = days_old.days
-                if int(snap_age) <= days_old :
-                    days_old = days_old.days
+                days_diff = datetime.date.today() - s.start_time.date()
+                days_diff = days_diff.days
+                if int(snap_age) <= days_diff :
+                    days_old = days_diff
                 else :
                     days_old = -1
             else:
                 days_old = 0
         else:
             print("Skipping snapshot already in progress")
+        #to check the most recent successfull snapshot and break the loop
+        if s.state == 'completed' and not check_all: break
     return days_old
 #Main Command group for snapshot,volumes,instances.
 @click.group()
@@ -58,7 +61,7 @@ help="Only snapshot for project (tag Project:<name>)")
 @click.option('--all','list_all',default = False,is_flag = True,
 help="List All snapshots of each Volume on request for --all")
 @click.option('--force','force_all',default = True,
-      help="List All snapshots")
+      help="All snapshots")
 @click.option('--instance',default = None,
             help="Only snapshot for instance")
 def list_snapshots(project,list_all,force_all,instance):
@@ -222,34 +225,38 @@ def reboot_instances(project,force_all,instance):
     help="Create snapshot for only selected instance")
 @click.option('--age','snap_age',default = None,
     help="snapshot only if last succesfull snapshot is older than age param")
-def create_snapshot(project,force_all,instance,snap_age):
+@click.option('--all','check_all',default = False,is_flag = True,
+                help="Check All snapshots of each Volume on request for --all")
+def create_snapshot(project,force_all,instance,snap_age,check_all):
     "Create snapshots for EC2 instances"
     instances = filter_instances(project,force_all,instance)
     # for each instance,volume,create snapshot
     for i in instances:
             instance_state = i.state['Name']
             for v in i.volumes.all():
-                if has_pending_snapshot(v):
-                    print("Skipping {0},snapshot already in progress".format(v.id))
-                    continue
-                if instance_state =='running':
-                    print("Stopping  {0}",format(i.id))
-                    i.stop()
-                    i.wait_until_stopped()
-                days_old = age_check_snapshot(v,snap_age)
+                days_old = age_check_snapshot(v,snap_age,check_all)
                 if days_old ==0 or days_old != -1 :
+                    if has_pending_snapshot(v):
+                        print("Skipping {0},snapshot already in progress".format(v.id))
+                        continue
+                    if instance_state =='running':
+                        print("Stopping  {0}",format(i.id))
+                        i.stop()
+                        i.wait_until_stopped()
+
                     print("Creating snapshots of{0}".format(v.id))
                     try :
                         v.create_snapshot(Description="Created by SnapshotAlyzer 30000")
                     except botocore.exceptions.ClientError as e :
                         print("Skipped Snapshot creation {0}. ",format(i.id)+ str(e))
                         continue
+                    if instance_state == 'running':
+                        print("Starting  {0}".format(i.id))
+                        i.start()
+                        i.wait_until_running()
                 else :
                     print(" Skipping snapshot of {0},snapshot within {1} days already exists".format(v.id,snap_age))
-            if instance_state == 'running':
-                print("Starting  {0}".format(i.id))
-                i.start()
-                i.wait_until_running()
+
     print("Done")
     return
 #invoke the main group command
